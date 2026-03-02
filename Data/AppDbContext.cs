@@ -9,6 +9,13 @@ public class AppDbContext : DbContext
     
     public DbSet<TaskItem>  TaskItems { get; set; }
     public DbSet<Label> Labels { get; set; }
-    
-    
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<Label>()
+            .HasMany(l => l.TaskItems)     
+            .WithOne(t => t.Label)        
+            .HasForeignKey(t => t.LabelId)  
+            .OnDelete(DeleteBehavior.SetNull); 
+    }
 }
