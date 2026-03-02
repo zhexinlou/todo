@@ -12,11 +12,10 @@ public class AppDbContext : DbContext
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        // Label 和 TaskItem 一对多关系
         modelBuilder.Entity<Label>()
-            .HasMany(l => l.TaskItems)       // 一个 Label 有多个 TaskItem
-            .WithOne(t => t.Label)           // 一个 TaskItem 属于一个 Label
-            .HasForeignKey(t => t.LabelId)   // 外键是 LabelId
-            .OnDelete(DeleteBehavior.SetNull); // 删除 Label 时，TaskItem 的 LabelId 设为 null
+            .HasMany(l => l.TaskItems)     
+            .WithOne(t => t.Label)        
+            .HasForeignKey(t => t.LabelId)  
+            .OnDelete(DeleteBehavior.SetNull); 
     }
 }

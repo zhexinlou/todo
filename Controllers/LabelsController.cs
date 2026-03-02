@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using ToDoWebAPI.Data;
+using ToDoWebAPI.DTOs;
 using ToDoWebAPI.Models;
 
 namespace ToDoWebAPI.Controllers;
@@ -17,46 +18,58 @@ public class LabelsController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<Label>>> GetAll()
+    public async Task<ActionResult<IEnumerable<LabelResponseDto>>> GetAll()
     {
-        return await _context.Labels.ToListAsync();
+        var labels = await _context.Labels
+            .Select(l => new LabelResponseDto(l.Id, l.Name))
+            .ToListAsync();
+
+        return labels;
     }
 
     [HttpGet("{id}")]
-    public async Task<ActionResult<Label>> GetById(int id)
+    public async Task<ActionResult<LabelResponseDto>> GetById(int id)
     {
-        var label = await _context.Labels.FindAsync(id);
+        var label = await _context.Labels
+            .Where(l => l.Id == id)
+            .Select(l => new LabelResponseDto(l.Id, l.Name))
+            .FirstOrDefaultAsync();
+
         if (label == null)
             return NotFound();
+
         return label;
     }
 
     [HttpPost]
-    public async Task<ActionResult<Label>> Create(Label label)
+    public async Task<ActionResult<LabelResponseDto>> Create(LabelCreateDto dto)
     {
+        var label = new Label
+        {
+            Name = dto.Name
+        };
+
         _context.Labels.Add(label);
         await _context.SaveChangesAsync();
-        return CreatedAtAction(nameof(GetById), new { id = label.Id }, label);
+
+        var response = new LabelResponseDto(label.Id, label.Name);
+
+        return CreatedAtAction(nameof(GetById), new { id = label.Id }, response);
     }
 
     [HttpPut("{id}")]
-    public async Task<IActionResult> Update(int id, Label label)
+    public async Task<IActionResult> Update(int id, LabelUpdateDto dto)
     {
-        if (id != label.Id)
+        if (id != dto.Id)
             return BadRequest();
 
-        _context.Entry(label).State = EntityState.Modified;
+        var label = await _context.Labels.FindAsync(id);
+        if (label == null)
+            return NotFound();
 
-        try
-        {
-            await _context.SaveChangesAsync();
-        }
-        catch (DbUpdateConcurrencyException)
-        {
-            if (!await _context.Labels.AnyAsync(l => l.Id == id))
-                return NotFound();
-            throw;
-        }
+        label.Name = dto.Name;
+
+        await _context.SaveChangesAsync();
 
         return NoContent();
     }

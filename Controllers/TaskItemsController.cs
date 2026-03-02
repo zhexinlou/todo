@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using ToDoWebAPI.Data;
+using ToDoWebAPI.DTOs;
 using ToDoWebAPI.Models;
 
 namespace ToDoWebAPI.Controllers;
@@ -17,46 +18,92 @@ public class TaskItemsController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<TaskItem>>> GetAll()
+    public async Task<ActionResult<IEnumerable<TaskItemResponseDto>>> GetAll()
     {
-        return await _context.TaskItems.Include(t => t.Label).ToListAsync();
+        var tasks = await _context.TaskItems
+            .Include(t => t.Label)
+            .Select(t => new TaskItemResponseDto(
+                t.Id,
+                t.Title,
+                t.Description,
+                t.DueDate,
+                t.LabelId,
+                t.Label != null ? t.Label.Name : null
+            ))
+            .ToListAsync();
+
+        return tasks;
     }
 
     [HttpGet("{id}")]
-    public async Task<ActionResult<TaskItem>> GetById(int id)
+    public async Task<ActionResult<TaskItemResponseDto>> GetById(int id)
     {
-        var task = await _context.TaskItems.Include(t => t.Label).FirstOrDefaultAsync(t => t.Id == id);
+        var task = await _context.TaskItems
+            .Include(t => t.Label)
+            .Where(t => t.Id == id)
+            .Select(t => new TaskItemResponseDto(
+                t.Id,
+                t.Title,
+                t.Description,
+                t.DueDate,
+                t.LabelId,
+                t.Label != null ? t.Label.Name : null
+            ))
+            .FirstOrDefaultAsync();
+
         if (task == null)
             return NotFound();
+
         return task;
     }
 
     [HttpPost]
-    public async Task<ActionResult<TaskItem>> Create(TaskItem taskItem)
+    public async Task<ActionResult<TaskItemResponseDto>> Create(TaskItemCreateDto dto)
     {
+        var taskItem = new TaskItem
+        {
+            Title = dto.Title,
+            Description = dto.Description,
+            DueDate = dto.DueDate,
+            LabelId = dto.LabelId
+        };
+
         _context.TaskItems.Add(taskItem);
         await _context.SaveChangesAsync();
-        return CreatedAtAction(nameof(GetById), new { id = taskItem.Id }, taskItem);
+
+        if (taskItem.LabelId.HasValue)
+        {
+            await _context.Entry(taskItem).Reference(t => t.Label).LoadAsync();
+        }
+
+        var response = new TaskItemResponseDto(
+            taskItem.Id,
+            taskItem.Title,
+            taskItem.Description,
+            taskItem.DueDate,
+            taskItem.LabelId,
+            taskItem.Label?.Name
+        );
+
+        return CreatedAtAction(nameof(GetById), new { id = taskItem.Id }, response);
     }
 
     [HttpPut("{id}")]
-    public async Task<IActionResult> Update(int id, TaskItem taskItem)
+    public async Task<IActionResult> Update(int id, TaskItemUpdateDto dto)
     {
-        if (id != taskItem.Id)
+        if (id != dto.Id)
             return BadRequest();
 
-        _context.Entry(taskItem).State = EntityState.Modified;
+        var taskItem = await _context.TaskItems.FindAsync(id);
+        if (taskItem == null)
+            return NotFound();
 
-        try
-        {
-            await _context.SaveChangesAsync();
-        }
-        catch (DbUpdateConcurrencyException)
-        {
-            if (!await _context.TaskItems.AnyAsync(t => t.Id == id))
-                return NotFound();
-            throw;
-        }
+        taskItem.Title = dto.Title;
+        taskItem.Description = dto.Description;
+        taskItem.DueDate = dto.DueDate;
+        taskItem.LabelId = dto.LabelId;
+
+        await _context.SaveChangesAsync();
 
         return NoContent();
     }
