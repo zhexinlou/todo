@@ -1,6 +1,6 @@
-namespace ToDoWebAPI.DTOs;
+namespace ToDoWebAPI.Features.Queries.TaskItems;
 
-public record TaskItemResponseDto(
+public record TaskItemDto(
     int Id,
     string Title,
     string Description,

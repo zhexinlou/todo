@@ -8,4 +8,7 @@ public class TaskItem
     public string Description { get; set; } = String.Empty;
     public string Title { get; set; } = String.Empty;
     public DateTime DueDate { get; set; } = DateTime.UtcNow;
+
+    public int? CategoryId { get; set; } = 1;
+    public Category? Category { get; set; }
 }
