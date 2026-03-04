@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using ToDoWebAPI;
 using ToDoWebAPI.Data;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -11,6 +12,9 @@ builder.Services.AddOpenApi();
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+
+// Register MediatR and handlers
+builder.Services.AddApplicationServices();
 
 var app = builder.Build();
 
@@ -30,8 +34,3 @@ app.MapControllers();
 
 
 app.Run();
-
-record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
-{
-    public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
-}

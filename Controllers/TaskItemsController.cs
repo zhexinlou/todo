@@ -1,8 +1,11 @@
+using MediatR;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using ToDoWebAPI.Data;
-using ToDoWebAPI.DTOs;
-using ToDoWebAPI.Models;
+using ToDoWebAPI.Features.Commands.TaskItems.CreateTaskItem;
+using ToDoWebAPI.Features.Commands.TaskItems.DeleteTaskItem;
+using ToDoWebAPI.Features.Commands.TaskItems.UpdateTaskItem;
+using ToDoWebAPI.Features.Queries.TaskItems;
+using ToDoWebAPI.Features.Queries.TaskItems.GetAllTaskItems;
+using ToDoWebAPI.Features.Queries.TaskItems.GetTaskItemById;
 
 namespace ToDoWebAPI.Controllers;
 
@@ -10,113 +13,63 @@ namespace ToDoWebAPI.Controllers;
 [Route("api/[controller]")]
 public class TaskItemsController : ControllerBase
 {
-    private readonly AppDbContext _context;
+    private readonly IMediator _mediator;
 
-    public TaskItemsController(AppDbContext context)
+    public TaskItemsController(IMediator mediator)
     {
-        _context = context;
+        _mediator = mediator;
     }
 
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<TaskItemResponseDto>>> GetAll()
+    public async Task<ActionResult<IEnumerable<TaskItemDto>>> GetAll(CancellationToken cancellationToken)
     {
-        var tasks = await _context.TaskItems
-            .Include(t => t.Label)
-            .Select(t => new TaskItemResponseDto(
-                t.Id,
-                t.Title,
-                t.Description,
-                t.DueDate,
-                t.LabelId,
-                t.Label != null ? t.Label.Name : null
-            ))
-            .ToListAsync();
-
-        return tasks;
+        var result = await _mediator.Send(new GetAllTaskItemsQuery(), cancellationToken);
+        return Ok(result);
     }
 
     [HttpGet("{id}")]
-    public async Task<ActionResult<TaskItemResponseDto>> GetById(int id)
+    public async Task<ActionResult<TaskItemDto>> GetById(int id, CancellationToken cancellationToken)
     {
-        var task = await _context.TaskItems
-            .Include(t => t.Label)
-            .Where(t => t.Id == id)
-            .Select(t => new TaskItemResponseDto(
-                t.Id,
-                t.Title,
-                t.Description,
-                t.DueDate,
-                t.LabelId,
-                t.Label != null ? t.Label.Name : null
-            ))
-            .FirstOrDefaultAsync();
+        var result = await _mediator.Send(new GetTaskItemByIdQuery(id), cancellationToken);
 
-        if (task == null)
+        if (result == null)
             return NotFound();
 
-        return task;
+        return result;
     }
 
     [HttpPost]
-    public async Task<ActionResult<TaskItemResponseDto>> Create(TaskItemCreateDto dto)
+    public async Task<ActionResult<TaskItemDto>> Create(CreateTaskItemRequest request, CancellationToken cancellationToken)
     {
-        var taskItem = new TaskItem
-        {
-            Title = dto.Title,
-            Description = dto.Description,
-            DueDate = dto.DueDate,
-            LabelId = dto.LabelId
-        };
+        var command = new CreateTaskItemCommand(request.Title, request.Description, request.DueDate, request.LabelId);
+        var result = await _mediator.Send(command, cancellationToken);
 
-        _context.TaskItems.Add(taskItem);
-        await _context.SaveChangesAsync();
-
-        if (taskItem.LabelId.HasValue)
-        {
-            await _context.Entry(taskItem).Reference(t => t.Label).LoadAsync();
-        }
-
-        var response = new TaskItemResponseDto(
-            taskItem.Id,
-            taskItem.Title,
-            taskItem.Description,
-            taskItem.DueDate,
-            taskItem.LabelId,
-            taskItem.Label?.Name
-        );
-
-        return CreatedAtAction(nameof(GetById), new { id = taskItem.Id }, response);
+        return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
     }
 
     [HttpPut("{id}")]
-    public async Task<IActionResult> Update(int id, TaskItemUpdateDto dto)
+    public async Task<IActionResult> Update(int id, UpdateTaskItemRequest request, CancellationToken cancellationToken)
     {
-        if (id != dto.Id)
+        if (id != request.Id)
             return BadRequest();
 
-        var taskItem = await _context.TaskItems.FindAsync(id);
-        if (taskItem == null)
+        var command = new UpdateTaskItemCommand(request.Id, request.Title, request.Description, request.DueDate, request.LabelId);
+        var success = await _mediator.Send(command, cancellationToken);
+
+        if (!success)
             return NotFound();
-
-        taskItem.Title = dto.Title;
-        taskItem.Description = dto.Description;
-        taskItem.DueDate = dto.DueDate;
-        taskItem.LabelId = dto.LabelId;
-
-        await _context.SaveChangesAsync();
 
         return NoContent();
     }
 
     [HttpDelete("{id}")]
-    public async Task<IActionResult> Delete(int id)
+    public async Task<IActionResult> Delete(int id, CancellationToken cancellationToken)
     {
-        var task = await _context.TaskItems.FindAsync(id);
-        if (task == null)
-            return NotFound();
+        var command = new DeleteTaskItemCommand(id);
+        var success = await _mediator.Send(command, cancellationToken);
 
-        _context.TaskItems.Remove(task);
-        await _context.SaveChangesAsync();
+        if (!success)
+            return NotFound();
 
         return NoContent();
     }

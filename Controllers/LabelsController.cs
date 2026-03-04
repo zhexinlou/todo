@@ -1,8 +1,11 @@
+using MediatR;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using ToDoWebAPI.Data;
-using ToDoWebAPI.DTOs;
-using ToDoWebAPI.Models;
+using ToDoWebAPI.Features.Commands.Labels.CreateLabel;
+using ToDoWebAPI.Features.Commands.Labels.DeleteLabel;
+using ToDoWebAPI.Features.Commands.Labels.UpdateLabel;
+using ToDoWebAPI.Features.Queries.Labels;
+using ToDoWebAPI.Features.Queries.Labels.GetAllLabels;
+using ToDoWebAPI.Features.Queries.Labels.GetLabelById;
 
 namespace ToDoWebAPI.Controllers;
 
@@ -10,79 +13,63 @@ namespace ToDoWebAPI.Controllers;
 [Route("api/[controller]")]
 public class LabelsController : ControllerBase
 {
-    private readonly AppDbContext _context;
+    private readonly IMediator _mediator;
 
-    public LabelsController(AppDbContext context)
+    public LabelsController(IMediator mediator)
     {
-        _context = context;
+        _mediator = mediator;
     }
 
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<LabelResponseDto>>> GetAll()
+    public async Task<ActionResult<IEnumerable<LabelDto>>> GetAll(CancellationToken cancellationToken)
     {
-        var labels = await _context.Labels
-            .Select(l => new LabelResponseDto(l.Id, l.Name))
-            .ToListAsync();
-
-        return labels;
+        var result = await _mediator.Send(new GetAllLabelsQuery(), cancellationToken);
+        return Ok(result);
     }
 
     [HttpGet("{id}")]
-    public async Task<ActionResult<LabelResponseDto>> GetById(int id)
+    public async Task<ActionResult<LabelDto>> GetById(int id, CancellationToken cancellationToken)
     {
-        var label = await _context.Labels
-            .Where(l => l.Id == id)
-            .Select(l => new LabelResponseDto(l.Id, l.Name))
-            .FirstOrDefaultAsync();
+        var result = await _mediator.Send(new GetLabelByIdQuery(id), cancellationToken);
 
-        if (label == null)
+        if (result == null)
             return NotFound();
 
-        return label;
+        return result;
     }
 
     [HttpPost]
-    public async Task<ActionResult<LabelResponseDto>> Create(LabelCreateDto dto)
+    public async Task<ActionResult<LabelDto>> Create(CreateLabelRequest request, CancellationToken cancellationToken)
     {
-        var label = new Label
-        {
-            Name = dto.Name
-        };
+        var command = new CreateLabelCommand(request.Name);
+        var result = await _mediator.Send(command, cancellationToken);
 
-        _context.Labels.Add(label);
-        await _context.SaveChangesAsync();
-
-        var response = new LabelResponseDto(label.Id, label.Name);
-
-        return CreatedAtAction(nameof(GetById), new { id = label.Id }, response);
+        return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
     }
 
     [HttpPut("{id}")]
-    public async Task<IActionResult> Update(int id, LabelUpdateDto dto)
+    public async Task<IActionResult> Update(int id, UpdateLabelRequest request, CancellationToken cancellationToken)
     {
-        if (id != dto.Id)
+        if (id != request.Id)
             return BadRequest();
 
-        var label = await _context.Labels.FindAsync(id);
-        if (label == null)
+        var command = new UpdateLabelCommand(request.Id, request.Name);
+        var success = await _mediator.Send(command, cancellationToken);
+
+        if (!success)
             return NotFound();
-
-        label.Name = dto.Name;
-
-        await _context.SaveChangesAsync();
 
         return NoContent();
     }
 
     [HttpDelete("{id}")]
-    public async Task<IActionResult> Delete(int id)
+    public async Task<IActionResult> Delete(int id, CancellationToken cancellationToken)
     {
-        var label = await _context.Labels.FindAsync(id);
-        if (label == null)
-            return NotFound();
+        var command = new DeleteLabelCommand(id);
+        var success = await _mediator.Send(command, cancellationToken);
 
-        _context.Labels.Remove(label);
-        await _context.SaveChangesAsync();
+        if (!success)
+            return NotFound();
 
         return NoContent();
     }
