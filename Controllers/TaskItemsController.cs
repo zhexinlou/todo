@@ -3,7 +3,6 @@ using Microsoft.AspNetCore.Mvc;
 using ToDoWebAPI.Features.Commands.TaskItems.CreateTaskItem;
 using ToDoWebAPI.Features.Commands.TaskItems.DeleteTaskItem;
 using ToDoWebAPI.Features.Commands.TaskItems.UpdateTaskItem;
-using ToDoWebAPI.Features.Queries.TaskItems;
 using ToDoWebAPI.Features.Queries.TaskItems.GetAllTaskItems;
 using ToDoWebAPI.Features.Queries.TaskItems.GetTaskItemById;
 
@@ -21,14 +20,14 @@ public class TaskItemsController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<TaskItemDto>>> GetAll(CancellationToken cancellationToken)
+    public async Task<ActionResult<IEnumerable<GetAllTaskItemsResponseDTO>>> GetAll(CancellationToken cancellationToken)
     {
         var result = await _mediator.Send(new GetAllTaskItemsQuery(), cancellationToken);
         return Ok(result);
     }
 
     [HttpGet("{id}")]
-    public async Task<ActionResult<TaskItemDto>> GetById(int id, CancellationToken cancellationToken)
+    public async Task<ActionResult<GetTaskItemByIdResponseDTO>> GetById(int id, CancellationToken cancellationToken)
     {
         var result = await _mediator.Send(new GetTaskItemByIdQuery(id), cancellationToken);
 
@@ -39,7 +38,7 @@ public class TaskItemsController : ControllerBase
     }
 
     [HttpPost]
-    public async Task<ActionResult<TaskItemDto>> Create(CreateTaskItemRequest request, CancellationToken cancellationToken)
+    public async Task<ActionResult<CreateTaskItemResponseDTO>> Create(CreateTaskItemRequestDTO request, CancellationToken cancellationToken)
     {
         var command = new CreateTaskItemCommand(request.Title, request.Description, request.DueDate, request.LabelId);
         var result = await _mediator.Send(command, cancellationToken);
@@ -48,7 +47,7 @@ public class TaskItemsController : ControllerBase
     }
 
     [HttpPut("{id}")]
-    public async Task<IActionResult> Update(int id, UpdateTaskItemRequest request, CancellationToken cancellationToken)
+    public async Task<IActionResult> Update(int id, UpdateTaskItemRequestDTO request, CancellationToken cancellationToken)
     {
         if (id != request.Id)
             return BadRequest();

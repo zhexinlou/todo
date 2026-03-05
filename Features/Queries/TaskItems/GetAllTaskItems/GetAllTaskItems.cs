@@ -5,11 +5,21 @@ using ToDoWebAPI.Data;
 
 namespace ToDoWebAPI.Features.Queries.TaskItems.GetAllTaskItems;
 
+// Response DTO
+public record GetAllTaskItemsResponseDTO(
+    int Id,
+    string Title,
+    string Description,
+    DateTime DueDate,
+    int? LabelId,
+    string? LabelName
+);
+
 // Query
-public record GetAllTaskItemsQuery : IRequest<IEnumerable<TaskItemDto>>;
+public record GetAllTaskItemsQuery : IRequest<IEnumerable<GetAllTaskItemsResponseDTO>>;
 
 // Handler
-public class GetAllTaskItemsHandler : IRequestHandler<GetAllTaskItemsQuery, IEnumerable<TaskItemDto>>
+public class GetAllTaskItemsHandler : IRequestHandler<GetAllTaskItemsQuery, IEnumerable<GetAllTaskItemsResponseDTO>>
 {
     private readonly AppDbContext _context;
     private readonly ILogger<GetAllTaskItemsHandler> _logger;
@@ -20,13 +30,13 @@ public class GetAllTaskItemsHandler : IRequestHandler<GetAllTaskItemsQuery, IEnu
         _logger = logger;
     }
 
-    public async Task<IEnumerable<TaskItemDto>> Handle(GetAllTaskItemsQuery request, CancellationToken cancellationToken)
+    public async Task<IEnumerable<GetAllTaskItemsResponseDTO>> Handle(GetAllTaskItemsQuery request, CancellationToken cancellationToken)
     {
         _logger.LogInformation("Getting all task items");
 
         var taskItems = await _context.TaskItems
             .Include(t => t.Label)
-            .Select(t => new TaskItemDto(
+            .Select(t => new GetAllTaskItemsResponseDTO(
                 t.Id,
                 t.Title,
                 t.Description,
