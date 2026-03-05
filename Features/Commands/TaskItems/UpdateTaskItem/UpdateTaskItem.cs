@@ -6,7 +6,7 @@ using ToDoWebAPI.Data;
 namespace ToDoWebAPI.Features.Commands.TaskItems.UpdateTaskItem;
 
 // Request DTO
-public record UpdateTaskItemRequest(
+public record UpdateTaskItemRequestDTO(
     [Required] int Id,
     [Required] string Title,
     string Description,

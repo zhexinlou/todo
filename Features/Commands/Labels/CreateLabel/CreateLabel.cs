@@ -2,19 +2,21 @@ using System.ComponentModel.DataAnnotations;
 using MediatR;
 using Microsoft.Extensions.Logging;
 using ToDoWebAPI.Data;
-using ToDoWebAPI.Features.Queries.Labels;
 using ToDoWebAPI.Models;
 
 namespace ToDoWebAPI.Features.Commands.Labels.CreateLabel;
 
 // Request DTO
-public record CreateLabelRequest([Required] string Name);
+public record CreateLabelRequestDTO([Required] string Name);
+
+// Response DTO
+public record CreateLabelResponseDTO(int Id, string Name);
 
 // Command
-public record CreateLabelCommand([Required] string Name) : IRequest<LabelDto>;
+public record CreateLabelCommand([Required] string Name) : IRequest<CreateLabelResponseDTO>;
 
 // Handler
-public class CreateLabelHandler : IRequestHandler<CreateLabelCommand, LabelDto>
+public class CreateLabelHandler : IRequestHandler<CreateLabelCommand, CreateLabelResponseDTO>
 {
     private readonly AppDbContext _context;
     private readonly ILogger<CreateLabelHandler> _logger;
@@ -25,7 +27,7 @@ public class CreateLabelHandler : IRequestHandler<CreateLabelCommand, LabelDto>
         _logger = logger;
     }
 
-    public async Task<LabelDto> Handle(CreateLabelCommand command, CancellationToken cancellationToken)
+    public async Task<CreateLabelResponseDTO> Handle(CreateLabelCommand command, CancellationToken cancellationToken)
     {
         _logger.LogInformation("Creating label: {Name}", command.Name);
 
@@ -39,6 +41,6 @@ public class CreateLabelHandler : IRequestHandler<CreateLabelCommand, LabelDto>
 
         _logger.LogInformation("Label created with Id: {Id}", label.Id);
 
-        return new LabelDto(label.Id, label.Name);
+        return new CreateLabelResponseDTO(label.Id, label.Name);
     }
 }

@@ -6,11 +6,14 @@ using ToDoWebAPI.Data;
 
 namespace ToDoWebAPI.Features.Queries.Labels.GetLabelById;
 
+// Response DTO
+public record GetLabelByIdResponseDTO(int Id, string Name);
+
 // Query
-public record GetLabelByIdQuery([Required] int Id) : IRequest<LabelDto?>;
+public record GetLabelByIdQuery([Required] int Id) : IRequest<GetLabelByIdResponseDTO?>;
 
 // Handler
-public class GetLabelByIdHandler : IRequestHandler<GetLabelByIdQuery, LabelDto?>
+public class GetLabelByIdHandler : IRequestHandler<GetLabelByIdQuery, GetLabelByIdResponseDTO?>
 {
     private readonly AppDbContext _context;
     private readonly ILogger<GetLabelByIdHandler> _logger;
@@ -21,13 +24,13 @@ public class GetLabelByIdHandler : IRequestHandler<GetLabelByIdQuery, LabelDto?>
         _logger = logger;
     }
 
-    public async Task<LabelDto?> Handle(GetLabelByIdQuery request, CancellationToken cancellationToken)
+    public async Task<GetLabelByIdResponseDTO?> Handle(GetLabelByIdQuery request, CancellationToken cancellationToken)
     {
         _logger.LogInformation("Getting label by Id: {Id}", request.Id);
 
         var label = await _context.Labels
             .Where(l => l.Id == request.Id)
-            .Select(l => new LabelDto(l.Id, l.Name))
+            .Select(l => new GetLabelByIdResponseDTO(l.Id, l.Name))
             .FirstOrDefaultAsync(cancellationToken);
 
         if (label == null)

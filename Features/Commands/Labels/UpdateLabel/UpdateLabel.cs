@@ -6,7 +6,7 @@ using ToDoWebAPI.Data;
 namespace ToDoWebAPI.Features.Commands.Labels.UpdateLabel;
 
 // Request DTO
-public record UpdateLabelRequest([Required] int Id, [Required] string Name);
+public record UpdateLabelRequestDTO([Required] int Id, [Required] string Name);
 
 // Command
 public record UpdateLabelCommand([Required] int Id, [Required] string Name) : IRequest<bool>;

@@ -6,11 +6,21 @@ using ToDoWebAPI.Data;
 
 namespace ToDoWebAPI.Features.Queries.TaskItems.GetTaskItemById;
 
+// Response DTO
+public record GetTaskItemByIdResponseDTO(
+    int Id,
+    string Title,
+    string Description,
+    DateTime DueDate,
+    int? LabelId,
+    string? LabelName
+);
+
 // Query
-public record GetTaskItemByIdQuery([Required] int Id) : IRequest<TaskItemDto?>;
+public record GetTaskItemByIdQuery([Required] int Id) : IRequest<GetTaskItemByIdResponseDTO?>;
 
 // Handler
-public class GetTaskItemByIdHandler : IRequestHandler<GetTaskItemByIdQuery, TaskItemDto?>
+public class GetTaskItemByIdHandler : IRequestHandler<GetTaskItemByIdQuery, GetTaskItemByIdResponseDTO?>
 {
     private readonly AppDbContext _context;
     private readonly ILogger<GetTaskItemByIdHandler> _logger;
@@ -21,14 +31,14 @@ public class GetTaskItemByIdHandler : IRequestHandler<GetTaskItemByIdQuery, Task
         _logger = logger;
     }
 
-    public async Task<TaskItemDto?> Handle(GetTaskItemByIdQuery request, CancellationToken cancellationToken)
+    public async Task<GetTaskItemByIdResponseDTO?> Handle(GetTaskItemByIdQuery request, CancellationToken cancellationToken)
     {
         _logger.LogInformation("Getting task item by Id: {Id}", request.Id);
 
         var taskItem = await _context.TaskItems
             .Include(t => t.Label)
             .Where(t => t.Id == request.Id)
-            .Select(t => new TaskItemDto(
+            .Select(t => new GetTaskItemByIdResponseDTO(
                 t.Id,
                 t.Title,
                 t.Description,

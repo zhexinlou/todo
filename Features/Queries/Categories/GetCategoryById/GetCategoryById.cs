@@ -6,11 +6,14 @@ using ToDoWebAPI.Data;
 
 namespace ToDoWebAPI.Features.Queries.Categories.GetCategoryById;
 
+// Response DTO
+public record GetCategoryByIdResponseDTO(int Id, string Name, string Description, string Color);
+
 // Query
-public record GetCategoryByIdQuery([Required] int Id) : IRequest<CategoryDto?>;
+public record GetCategoryByIdQuery([Required] int Id) : IRequest<GetCategoryByIdResponseDTO?>;
 
 // Handler
-public class GetCategoryByIdHandler : IRequestHandler<GetCategoryByIdQuery, CategoryDto?>
+public class GetCategoryByIdHandler : IRequestHandler<GetCategoryByIdQuery, GetCategoryByIdResponseDTO?>
 {
     private readonly AppDbContext _context;
     private readonly ILogger<GetCategoryByIdHandler> _logger;
@@ -21,13 +24,13 @@ public class GetCategoryByIdHandler : IRequestHandler<GetCategoryByIdQuery, Cate
         _logger = logger;
     }
 
-    public async Task<CategoryDto?> Handle(GetCategoryByIdQuery request, CancellationToken cancellationToken)
+    public async Task<GetCategoryByIdResponseDTO?> Handle(GetCategoryByIdQuery request, CancellationToken cancellationToken)
     {
         _logger.LogInformation("Getting category by Id: {Id}", request.Id);
 
         var category = await _context.Categories
             .Where(c => c.Id == request.Id)
-            .Select(c => new CategoryDto(c.Id, c.Name, c.Description, c.Color))
+            .Select(c => new GetCategoryByIdResponseDTO(c.Id, c.Name, c.Description, c.Color))
             .FirstOrDefaultAsync(cancellationToken);
 
         if (category == null)

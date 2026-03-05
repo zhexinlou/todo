@@ -2,17 +2,26 @@ using System.ComponentModel.DataAnnotations;
 using MediatR;
 using Microsoft.Extensions.Logging;
 using ToDoWebAPI.Data;
-using ToDoWebAPI.Features.Queries.TaskItems;
 using ToDoWebAPI.Models;
 
 namespace ToDoWebAPI.Features.Commands.TaskItems.CreateTaskItem;
 
 // Request DTO
-public record CreateTaskItemRequest(
+public record CreateTaskItemRequestDTO(
     [Required] string Title,
     string Description,
     [Required] DateTime DueDate,
     int? LabelId
+);
+
+// Response DTO
+public record CreateTaskItemResponseDTO(
+    int Id,
+    string Title,
+    string Description,
+    DateTime DueDate,
+    int? LabelId,
+    string? LabelName
 );
 
 // Command
@@ -21,10 +30,10 @@ public record CreateTaskItemCommand(
     string Description,
     [Required] DateTime DueDate,
     int? LabelId
-) : IRequest<TaskItemDto>;
+) : IRequest<CreateTaskItemResponseDTO>;
 
 // Handler
-public class CreateTaskItemHandler : IRequestHandler<CreateTaskItemCommand, TaskItemDto>
+public class CreateTaskItemHandler : IRequestHandler<CreateTaskItemCommand, CreateTaskItemResponseDTO>
 {
     private readonly AppDbContext _context;
     private readonly ILogger<CreateTaskItemHandler> _logger;
@@ -35,7 +44,7 @@ public class CreateTaskItemHandler : IRequestHandler<CreateTaskItemCommand, Task
         _logger = logger;
     }
 
-    public async Task<TaskItemDto> Handle(CreateTaskItemCommand command, CancellationToken cancellationToken)
+    public async Task<CreateTaskItemResponseDTO> Handle(CreateTaskItemCommand command, CancellationToken cancellationToken)
     {
         _logger.LogInformation("Creating task item: {Title}", command.Title);
 
@@ -57,7 +66,7 @@ public class CreateTaskItemHandler : IRequestHandler<CreateTaskItemCommand, Task
 
         _logger.LogInformation("Task item created with Id: {Id}", taskItem.Id);
 
-        return new TaskItemDto(
+        return new CreateTaskItemResponseDTO(
             taskItem.Id,
             taskItem.Title,
             taskItem.Description,

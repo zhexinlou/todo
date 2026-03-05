@@ -3,7 +3,6 @@ using Microsoft.AspNetCore.Mvc;
 using ToDoWebAPI.Features.Commands.Categories.CreateCategory;
 using ToDoWebAPI.Features.Commands.Categories.DeleteCategory;
 using ToDoWebAPI.Features.Commands.Categories.UpdateCategory;
-using ToDoWebAPI.Features.Queries.Categories;
 using ToDoWebAPI.Features.Queries.Categories.GetAllCategories;
 using ToDoWebAPI.Features.Queries.Categories.GetCategoryById;
 
@@ -21,14 +20,14 @@ public class CategoriesController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<CategoryDto>>> GetAll(CancellationToken cancellationToken)
+    public async Task<ActionResult<IEnumerable<GetAllCategoriesResponseDTO>>> GetAll(CancellationToken cancellationToken)
     {
         var result = await _mediator.Send(new GetAllCategoriesQuery(), cancellationToken);
         return Ok(result);
     }
 
     [HttpGet("{id}")]
-    public async Task<ActionResult<CategoryDto>> GetById(int id, CancellationToken cancellationToken)
+    public async Task<ActionResult<GetCategoryByIdResponseDTO>> GetById(int id, CancellationToken cancellationToken)
     {
         var result = await _mediator.Send(new GetCategoryByIdQuery(id), cancellationToken);
 
@@ -39,7 +38,7 @@ public class CategoriesController : ControllerBase
     }
 
     [HttpPost]
-    public async Task<ActionResult<CategoryDto>> Create(CreateCategoryRequest request, CancellationToken cancellationToken)
+    public async Task<ActionResult<CreateCategoryResponseDTO>> Create(CreateCategoryRequestDTO request, CancellationToken cancellationToken)
     {
         var command = new CreateCategoryCommand(request.Name, request.Description, request.Color);
         var result = await _mediator.Send(command, cancellationToken);
@@ -48,7 +47,7 @@ public class CategoriesController : ControllerBase
     }
 
     [HttpPut("{id}")]
-    public async Task<IActionResult> Update(int id, UpdateCategoryRequest request, CancellationToken cancellationToken)
+    public async Task<IActionResult> Update(int id, UpdateCategoryRequestDTO request, CancellationToken cancellationToken)
     {
         if (id != request.Id)
             return BadRequest();

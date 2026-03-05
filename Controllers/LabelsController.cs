@@ -3,7 +3,6 @@ using Microsoft.AspNetCore.Mvc;
 using ToDoWebAPI.Features.Commands.Labels.CreateLabel;
 using ToDoWebAPI.Features.Commands.Labels.DeleteLabel;
 using ToDoWebAPI.Features.Commands.Labels.UpdateLabel;
-using ToDoWebAPI.Features.Queries.Labels;
 using ToDoWebAPI.Features.Queries.Labels.GetAllLabels;
 using ToDoWebAPI.Features.Queries.Labels.GetLabelById;
 
@@ -21,14 +20,14 @@ public class LabelsController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<LabelDto>>> GetAll(CancellationToken cancellationToken)
+    public async Task<ActionResult<IEnumerable<GetAllLabelsResponseDTO>>> GetAll(CancellationToken cancellationToken)
     {
         var result = await _mediator.Send(new GetAllLabelsQuery(), cancellationToken);
         return Ok(result);
     }
 
     [HttpGet("{id}")]
-    public async Task<ActionResult<LabelDto>> GetById(int id, CancellationToken cancellationToken)
+    public async Task<ActionResult<GetLabelByIdResponseDTO>> GetById(int id, CancellationToken cancellationToken)
     {
         var result = await _mediator.Send(new GetLabelByIdQuery(id), cancellationToken);
 
@@ -39,7 +38,7 @@ public class LabelsController : ControllerBase
     }
 
     [HttpPost]
-    public async Task<ActionResult<LabelDto>> Create(CreateLabelRequest request, CancellationToken cancellationToken)
+    public async Task<ActionResult<CreateLabelResponseDTO>> Create(CreateLabelRequestDTO request, CancellationToken cancellationToken)
     {
         var command = new CreateLabelCommand(request.Name);
         var result = await _mediator.Send(command, cancellationToken);
@@ -48,7 +47,7 @@ public class LabelsController : ControllerBase
     }
 
     [HttpPut("{id}")]
-    public async Task<IActionResult> Update(int id, UpdateLabelRequest request, CancellationToken cancellationToken)
+    public async Task<IActionResult> Update(int id, UpdateLabelRequestDTO request, CancellationToken cancellationToken)
     {
         if (id != request.Id)
             return BadRequest();

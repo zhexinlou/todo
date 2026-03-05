@@ -6,7 +6,7 @@ using ToDoWebAPI.Data;
 namespace ToDoWebAPI.Features.Commands.Categories.UpdateCategory;
 
 // Request DTO
-public record UpdateCategoryRequest(
+public record UpdateCategoryRequestDTO(
     [Required] int Id,
     [Required] string Name,
     string Description,
