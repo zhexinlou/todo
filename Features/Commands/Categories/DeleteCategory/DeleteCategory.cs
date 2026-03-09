@@ -1,15 +1,9 @@
-using System.ComponentModel.DataAnnotations;
-using MediatR;
 using Microsoft.Extensions.Logging;
 using ToDoWebAPI.Data;
 
 namespace ToDoWebAPI.Features.Commands.Categories.DeleteCategory;
 
-// Command
-public record DeleteCategoryCommand([Required] int Id) : IRequest<bool>;
-
-// Handler
-public class DeleteCategoryHandler : IRequestHandler<DeleteCategoryCommand, bool>
+public class DeleteCategoryHandler
 {
     private readonly AppDbContext _context;
     private readonly ILogger<DeleteCategoryHandler> _logger;
@@ -20,22 +14,16 @@ public class DeleteCategoryHandler : IRequestHandler<DeleteCategoryCommand, bool
         _logger = logger;
     }
 
-    public async Task<bool> Handle(DeleteCategoryCommand command, CancellationToken cancellationToken)
+    public async Task HandleAsync(int id, CancellationToken cancellationToken)
     {
-        _logger.LogInformation("Deleting category Id: {Id}", command.Id);
+        _logger.LogInformation("Deleting category Id: {Id}", id);
 
-        var category = await _context.Categories.FindAsync(new object[] { command.Id }, cancellationToken);
-        if (category == null)
-        {
-            _logger.LogWarning("Category with Id {Id} not found", command.Id);
-            return false;
-        }
+        var category = await _context.Categories.FindAsync(new object[] { id }, cancellationToken)
+            ?? throw new Exception($"Category {id} not found");
 
         _context.Categories.Remove(category);
         await _context.SaveChangesAsync(cancellationToken);
 
-        _logger.LogInformation("Category {Id} deleted successfully", command.Id);
-
-        return true;
+        _logger.LogInformation("Category {Id} deleted successfully", id);
     }
 }

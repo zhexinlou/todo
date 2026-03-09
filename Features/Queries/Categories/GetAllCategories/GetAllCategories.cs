@@ -1,18 +1,12 @@
-using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using ToDoWebAPI.Data;
 
 namespace ToDoWebAPI.Features.Queries.Categories.GetAllCategories;
 
-// Response DTO
 public record GetAllCategoriesResponseDTO(int Id, string Name, string Description, string Color);
 
-// Query
-public record GetAllCategoriesQuery : IRequest<IEnumerable<GetAllCategoriesResponseDTO>>;
-
-// Handler
-public class GetAllCategoriesHandler : IRequestHandler<GetAllCategoriesQuery, IEnumerable<GetAllCategoriesResponseDTO>>
+public class GetAllCategoriesHandler
 {
     private readonly AppDbContext _context;
     private readonly ILogger<GetAllCategoriesHandler> _logger;
@@ -23,7 +17,7 @@ public class GetAllCategoriesHandler : IRequestHandler<GetAllCategoriesQuery, IE
         _logger = logger;
     }
 
-    public async Task<IEnumerable<GetAllCategoriesResponseDTO>> Handle(GetAllCategoriesQuery request, CancellationToken cancellationToken)
+    public async Task<IEnumerable<GetAllCategoriesResponseDTO>> HandleAsync(CancellationToken cancellationToken)
     {
         _logger.LogInformation("Getting all categories");
 

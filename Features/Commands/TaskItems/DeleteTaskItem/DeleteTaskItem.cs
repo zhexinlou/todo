@@ -1,15 +1,9 @@
-using System.ComponentModel.DataAnnotations;
-using MediatR;
 using Microsoft.Extensions.Logging;
 using ToDoWebAPI.Data;
 
 namespace ToDoWebAPI.Features.Commands.TaskItems.DeleteTaskItem;
 
-// Command
-public record DeleteTaskItemCommand([Required] int Id) : IRequest<bool>;
-
-// Handler
-public class DeleteTaskItemHandler : IRequestHandler<DeleteTaskItemCommand, bool>
+public class DeleteTaskItemHandler
 {
     private readonly AppDbContext _context;
     private readonly ILogger<DeleteTaskItemHandler> _logger;
@@ -20,22 +14,16 @@ public class DeleteTaskItemHandler : IRequestHandler<DeleteTaskItemCommand, bool
         _logger = logger;
     }
 
-    public async Task<bool> Handle(DeleteTaskItemCommand command, CancellationToken cancellationToken)
+    public async Task HandleAsync(int id, CancellationToken cancellationToken)
     {
-        _logger.LogInformation("Deleting task item Id: {Id}", command.Id);
+        _logger.LogInformation("Deleting task item Id: {Id}", id);
 
-        var taskItem = await _context.TaskItems.FindAsync(new object[] { command.Id }, cancellationToken);
-        if (taskItem == null)
-        {
-            _logger.LogWarning("Task item with Id {Id} not found", command.Id);
-            return false;
-        }
+        var taskItem = await _context.TaskItems.FindAsync(new object[] { id }, cancellationToken)
+            ?? throw new Exception($"TaskItem {id} not found");
 
         _context.TaskItems.Remove(taskItem);
         await _context.SaveChangesAsync(cancellationToken);
 
-        _logger.LogInformation("Task item {Id} deleted successfully", command.Id);
-
-        return true;
+        _logger.LogInformation("Task item {Id} deleted successfully", id);
     }
 }
