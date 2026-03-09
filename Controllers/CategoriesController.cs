@@ -1,4 +1,3 @@
-using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using ToDoWebAPI.Features.Commands.Categories.CreateCategory;
 using ToDoWebAPI.Features.Commands.Categories.DeleteCategory;
@@ -12,38 +11,45 @@ namespace ToDoWebAPI.Controllers;
 [Route("api/[controller]")]
 public class CategoriesController : ControllerBase
 {
-    private readonly IMediator _mediator;
+    private readonly CreateCategoryHandler _createHandler;
+    private readonly UpdateCategoryHandler _updateHandler;
+    private readonly DeleteCategoryHandler _deleteHandler;
+    private readonly GetAllCategoriesHandler _getAllHandler;
+    private readonly GetCategoryByIdHandler _getByIdHandler;
 
-    public CategoriesController(IMediator mediator)
+    public CategoriesController(
+        CreateCategoryHandler createHandler,
+        UpdateCategoryHandler updateHandler,
+        DeleteCategoryHandler deleteHandler,
+        GetAllCategoriesHandler getAllHandler,
+        GetCategoryByIdHandler getByIdHandler)
     {
-        _mediator = mediator;
+        _createHandler = createHandler;
+        _updateHandler = updateHandler;
+        _deleteHandler = deleteHandler;
+        _getAllHandler = getAllHandler;
+        _getByIdHandler = getByIdHandler;
     }
 
     [HttpGet]
     public async Task<ActionResult<IEnumerable<GetAllCategoriesResponseDTO>>> GetAll(CancellationToken cancellationToken)
     {
-        var result = await _mediator.Send(new GetAllCategoriesQuery(), cancellationToken);
+        var result = await _getAllHandler.HandleAsync(cancellationToken);
         return Ok(result);
     }
 
     [HttpGet("{id}")]
     public async Task<ActionResult<GetCategoryByIdResponseDTO>> GetById(int id, CancellationToken cancellationToken)
     {
-        var result = await _mediator.Send(new GetCategoryByIdQuery(id), cancellationToken);
-
-        if (result == null)
-            return NotFound();
-
-        return result;
+        var result = await _getByIdHandler.HandleAsync(id, cancellationToken);
+        return Ok(result);
     }
 
     [HttpPost]
-    public async Task<ActionResult<CreateCategoryResponseDTO>> Create(CreateCategoryRequestDTO request, CancellationToken cancellationToken)
+    public async Task<ActionResult<int>> Create(CreateCategoryRequestDTO request, CancellationToken cancellationToken)
     {
-        var command = new CreateCategoryCommand(request.Name, request.Description, request.Color);
-        var result = await _mediator.Send(command, cancellationToken);
-
-        return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
+        var id = await _createHandler.HandleAsync(request, cancellationToken);
+        return CreatedAtAction(nameof(GetById), new { id }, id);
     }
 
     [HttpPut("{id}")]
@@ -52,24 +58,14 @@ public class CategoriesController : ControllerBase
         if (id != request.Id)
             return BadRequest();
 
-        var command = new UpdateCategoryCommand(request.Id, request.Name, request.Description, request.Color);
-        var success = await _mediator.Send(command, cancellationToken);
-
-        if (!success)
-            return NotFound();
-
+        await _updateHandler.HandleAsync(request, cancellationToken);
         return NoContent();
     }
 
     [HttpDelete("{id}")]
     public async Task<IActionResult> Delete(int id, CancellationToken cancellationToken)
     {
-        var command = new DeleteCategoryCommand(id);
-        var success = await _mediator.Send(command, cancellationToken);
-
-        if (!success)
-            return NotFound();
-
+        await _deleteHandler.HandleAsync(id, cancellationToken);
         return NoContent();
     }
 }

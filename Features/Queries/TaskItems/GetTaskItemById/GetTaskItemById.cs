@@ -1,26 +1,19 @@
-using System.ComponentModel.DataAnnotations;
-using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using ToDoWebAPI.Data;
 
 namespace ToDoWebAPI.Features.Queries.TaskItems.GetTaskItemById;
 
-// Response DTO
 public record GetTaskItemByIdResponseDTO(
     int Id,
     string Title,
     string Description,
     DateTime DueDate,
-    int? LabelId,
-    string? LabelName
+    int? CategoryId,
+    string? CategoryName
 );
 
-// Query
-public record GetTaskItemByIdQuery([Required] int Id) : IRequest<GetTaskItemByIdResponseDTO?>;
-
-// Handler
-public class GetTaskItemByIdHandler : IRequestHandler<GetTaskItemByIdQuery, GetTaskItemByIdResponseDTO?>
+public class GetTaskItemByIdHandler
 {
     private readonly AppDbContext _context;
     private readonly ILogger<GetTaskItemByIdHandler> _logger;
@@ -31,31 +24,24 @@ public class GetTaskItemByIdHandler : IRequestHandler<GetTaskItemByIdQuery, GetT
         _logger = logger;
     }
 
-    public async Task<GetTaskItemByIdResponseDTO?> Handle(GetTaskItemByIdQuery request, CancellationToken cancellationToken)
+    public async Task<GetTaskItemByIdResponseDTO> HandleAsync(int id, CancellationToken cancellationToken)
     {
-        _logger.LogInformation("Getting task item by Id: {Id}", request.Id);
+        _logger.LogInformation("Getting task item by Id: {Id}", id);
 
         var taskItem = await _context.TaskItems
-            .Include(t => t.Label)
-            .Where(t => t.Id == request.Id)
+            .Where(t => t.Id == id)
             .Select(t => new GetTaskItemByIdResponseDTO(
                 t.Id,
                 t.Title,
                 t.Description,
                 t.DueDate,
-                t.LabelId,
-                t.Label != null ? t.Label.Name : null
+                t.CategoryId,
+                t.Category != null ? t.Category.Name : null
             ))
-            .FirstOrDefaultAsync(cancellationToken);
+            .FirstOrDefaultAsync(cancellationToken)
+            ?? throw new Exception($"TaskItem {id} not found");
 
-        if (taskItem == null)
-        {
-            _logger.LogWarning("Task item with Id {Id} not found", request.Id);
-        }
-        else
-        {
-            _logger.LogInformation("Retrieved task item: {Title}", taskItem.Title);
-        }
+        _logger.LogInformation("Retrieved task item: {Title}", taskItem.Title);
 
         return taskItem;
     }

@@ -1,4 +1,3 @@
-using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using ToDoWebAPI.Features.Commands.TaskItems.CreateTaskItem;
 using ToDoWebAPI.Features.Commands.TaskItems.DeleteTaskItem;
@@ -12,38 +11,45 @@ namespace ToDoWebAPI.Controllers;
 [Route("api/[controller]")]
 public class TaskItemsController : ControllerBase
 {
-    private readonly IMediator _mediator;
+    private readonly CreateTaskItemHandler _createHandler;
+    private readonly UpdateTaskItemHandler _updateHandler;
+    private readonly DeleteTaskItemHandler _deleteHandler;
+    private readonly GetAllTaskItemsHandler _getAllHandler;
+    private readonly GetTaskItemByIdHandler _getByIdHandler;
 
-    public TaskItemsController(IMediator mediator)
+    public TaskItemsController(
+        CreateTaskItemHandler createHandler,
+        UpdateTaskItemHandler updateHandler,
+        DeleteTaskItemHandler deleteHandler,
+        GetAllTaskItemsHandler getAllHandler,
+        GetTaskItemByIdHandler getByIdHandler)
     {
-        _mediator = mediator;
+        _createHandler = createHandler;
+        _updateHandler = updateHandler;
+        _deleteHandler = deleteHandler;
+        _getAllHandler = getAllHandler;
+        _getByIdHandler = getByIdHandler;
     }
 
     [HttpGet]
     public async Task<ActionResult<IEnumerable<GetAllTaskItemsResponseDTO>>> GetAll(CancellationToken cancellationToken)
     {
-        var result = await _mediator.Send(new GetAllTaskItemsQuery(), cancellationToken);
+        var result = await _getAllHandler.HandleAsync(cancellationToken);
         return Ok(result);
     }
 
     [HttpGet("{id}")]
     public async Task<ActionResult<GetTaskItemByIdResponseDTO>> GetById(int id, CancellationToken cancellationToken)
     {
-        var result = await _mediator.Send(new GetTaskItemByIdQuery(id), cancellationToken);
-
-        if (result == null)
-            return NotFound();
-
-        return result;
+        var result = await _getByIdHandler.HandleAsync(id, cancellationToken);
+        return Ok(result);
     }
 
     [HttpPost]
-    public async Task<ActionResult<CreateTaskItemResponseDTO>> Create(CreateTaskItemRequestDTO request, CancellationToken cancellationToken)
+    public async Task<ActionResult<int>> Create(CreateTaskItemRequestDTO request, CancellationToken cancellationToken)
     {
-        var command = new CreateTaskItemCommand(request.Title, request.Description, request.DueDate, request.LabelId);
-        var result = await _mediator.Send(command, cancellationToken);
-
-        return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
+        var id = await _createHandler.HandleAsync(request, cancellationToken);
+        return CreatedAtAction(nameof(GetById), new { id }, id);
     }
 
     [HttpPut("{id}")]
@@ -52,24 +58,14 @@ public class TaskItemsController : ControllerBase
         if (id != request.Id)
             return BadRequest();
 
-        var command = new UpdateTaskItemCommand(request.Id, request.Title, request.Description, request.DueDate, request.LabelId);
-        var success = await _mediator.Send(command, cancellationToken);
-
-        if (!success)
-            return NotFound();
-
+        await _updateHandler.HandleAsync(request, cancellationToken);
         return NoContent();
     }
 
     [HttpDelete("{id}")]
     public async Task<IActionResult> Delete(int id, CancellationToken cancellationToken)
     {
-        var command = new DeleteTaskItemCommand(id);
-        var success = await _mediator.Send(command, cancellationToken);
-
-        if (!success)
-            return NotFound();
-
+        await _deleteHandler.HandleAsync(id, cancellationToken);
         return NoContent();
     }
 }

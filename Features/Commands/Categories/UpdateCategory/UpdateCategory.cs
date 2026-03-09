@@ -1,11 +1,9 @@
 using System.ComponentModel.DataAnnotations;
-using MediatR;
 using Microsoft.Extensions.Logging;
 using ToDoWebAPI.Data;
 
 namespace ToDoWebAPI.Features.Commands.Categories.UpdateCategory;
 
-// Request DTO
 public record UpdateCategoryRequestDTO(
     [Required] int Id,
     [Required] string Name,
@@ -13,16 +11,7 @@ public record UpdateCategoryRequestDTO(
     string Color
 );
 
-// Command
-public record UpdateCategoryCommand(
-    [Required] int Id,
-    [Required] string Name,
-    string Description,
-    string Color
-) : IRequest<bool>;
-
-// Handler
-public class UpdateCategoryHandler : IRequestHandler<UpdateCategoryCommand, bool>
+public class UpdateCategoryHandler
 {
     private readonly AppDbContext _context;
     private readonly ILogger<UpdateCategoryHandler> _logger;
@@ -33,25 +22,19 @@ public class UpdateCategoryHandler : IRequestHandler<UpdateCategoryCommand, bool
         _logger = logger;
     }
 
-    public async Task<bool> Handle(UpdateCategoryCommand command, CancellationToken cancellationToken)
+    public async Task HandleAsync(UpdateCategoryRequestDTO request, CancellationToken cancellationToken)
     {
-        _logger.LogInformation("Updating category Id: {Id}", command.Id);
+        _logger.LogInformation("Updating category Id: {Id}", request.Id);
 
-        var category = await _context.Categories.FindAsync(new object[] { command.Id }, cancellationToken);
-        if (category == null)
-        {
-            _logger.LogWarning("Category with Id {Id} not found", command.Id);
-            return false;
-        }
+        var category = await _context.Categories.FindAsync(new object[] { request.Id }, cancellationToken)
+            ?? throw new Exception($"Category {request.Id} not found");
 
-        category.Name = command.Name;
-        category.Description = command.Description;
-        category.Color = command.Color;
+        category.Name = request.Name;
+        category.Description = request.Description;
+        category.Color = request.Color;
 
         await _context.SaveChangesAsync(cancellationToken);
 
-        _logger.LogInformation("Category {Id} updated successfully", command.Id);
-
-        return true;
+        _logger.LogInformation("Category {Id} updated successfully", request.Id);
     }
 }

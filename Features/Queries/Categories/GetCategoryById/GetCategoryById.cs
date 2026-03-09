@@ -1,19 +1,12 @@
-using System.ComponentModel.DataAnnotations;
-using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using ToDoWebAPI.Data;
 
 namespace ToDoWebAPI.Features.Queries.Categories.GetCategoryById;
 
-// Response DTO
 public record GetCategoryByIdResponseDTO(int Id, string Name, string Description, string Color);
 
-// Query
-public record GetCategoryByIdQuery([Required] int Id) : IRequest<GetCategoryByIdResponseDTO?>;
-
-// Handler
-public class GetCategoryByIdHandler : IRequestHandler<GetCategoryByIdQuery, GetCategoryByIdResponseDTO?>
+public class GetCategoryByIdHandler
 {
     private readonly AppDbContext _context;
     private readonly ILogger<GetCategoryByIdHandler> _logger;
@@ -24,23 +17,17 @@ public class GetCategoryByIdHandler : IRequestHandler<GetCategoryByIdQuery, GetC
         _logger = logger;
     }
 
-    public async Task<GetCategoryByIdResponseDTO?> Handle(GetCategoryByIdQuery request, CancellationToken cancellationToken)
+    public async Task<GetCategoryByIdResponseDTO> HandleAsync(int id, CancellationToken cancellationToken)
     {
-        _logger.LogInformation("Getting category by Id: {Id}", request.Id);
+        _logger.LogInformation("Getting category by Id: {Id}", id);
 
         var category = await _context.Categories
-            .Where(c => c.Id == request.Id)
+            .Where(c => c.Id == id)
             .Select(c => new GetCategoryByIdResponseDTO(c.Id, c.Name, c.Description, c.Color))
-            .FirstOrDefaultAsync(cancellationToken);
+            .FirstOrDefaultAsync(cancellationToken)
+            ?? throw new Exception($"Category {id} not found");
 
-        if (category == null)
-        {
-            _logger.LogWarning("Category with Id {Id} not found", request.Id);
-        }
-        else
-        {
-            _logger.LogInformation("Retrieved category: {Name}", category.Name);
-        }
+        _logger.LogInformation("Retrieved category: {Name}", category.Name);
 
         return category;
     }
